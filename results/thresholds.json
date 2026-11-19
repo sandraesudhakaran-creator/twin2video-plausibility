@@ -1,0 +1,10 @@
+{
+  "min_visible_px": 150,
+  "permanence_frames": 3,
+  "jump_px": 10.0,
+  "drift_px": 9.0,
+  "drift_frames": 6,
+  "scale_tol": 0.25,
+  "scale_frames": 4,
+  "flicker_level": 6.0
+}

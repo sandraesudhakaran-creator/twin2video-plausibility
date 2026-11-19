@@ -1,0 +1,61 @@
+# Digital twin of a small assembly station: a housing arrives on a conveyor,
+# a gripper places a cover on it, the cover is fastened, the assembly leaves.
+# All lengths in metres, times in seconds. The process plan below is the
+# single source of truth: the twin executes it, the assistance video is
+# annotated from it, and the Cosmos prompts are written from it.
+
+scene:
+  name: cover_assembly
+  fps: 24
+  sim_hz: 240
+  resolution: [640, 360]        # width, height (16:9, matches Cosmos-Transfer2.5 aspect)
+  camera:
+    eye: [0.0, -0.56, 0.40]
+    target: [0.0, 0.08, 0.09]
+    up: [0.0, 0.0, 1.0]
+    fov_deg: 44
+    near: 0.05
+    far: 3.0
+
+objects:
+  # rgb colours are also what the colour detector looks for
+  conveyor: {shape: box, size: [1.40, 0.14, 0.05], pos: [0.0, 0.0, 0.025], rgb: [0.25, 0.25, 0.27], static: true}
+  tray:     {shape: box, size: [0.18, 0.14, 0.02], pos: [0.0, 0.24, 0.01],  rgb: [0.55, 0.55, 0.50], static: true}
+  housing:  {shape: box, size: [0.10, 0.08, 0.05], pos: [-0.50, 0.0, 0.075], rgb: [0.10, 0.30, 0.85], kinematic: true, tracked: true}
+  cover:    {shape: box, size: [0.10, 0.08, 0.015], pos: [0.0, 0.24, 0.0275], rgb: [0.95, 0.50, 0.05], mass: 0.15, tracked: true}
+  gripper:  {shape: box, size: [0.04, 0.04, 0.06], pos: [0.0, 0.24, 0.30], rgb: [0.85, 0.85, 0.88], kinematic: true, tracked: true}
+
+# Each step: an instruction (used for the assistance overlay and the prompt)
+# and a list of actions run one after another.
+process_plan:
+  - id: convey_in
+    instruction: "Housing arrives at the station on the conveyor."
+    actions:
+      - {type: move, object: housing, to: [0.0, 0.0, 0.075], duration: 3.0}
+  - id: pick_cover
+    instruction: "Gripper picks the cover from the tray."
+    actions:
+      - {type: move, object: gripper, to: [0.0, 0.24, 0.065], duration: 1.0}
+      - {type: grasp, tool: gripper, object: cover}
+      - {type: wait, duration: 0.3}
+      - {type: move, object: gripper, to: [0.0, 0.24, 0.25], duration: 1.0}
+  - id: transfer
+    instruction: "Cover is carried over the housing."
+    actions:
+      - {type: move, object: gripper, to: [0.0, 0.0, 0.25], duration: 1.2}
+  - id: place
+    instruction: "Cover is lowered and released onto the housing."
+    actions:
+      - {type: move, object: gripper, to: [0.0, 0.0, 0.165], duration: 0.8}
+      - {type: release, tool: gripper}
+      - {type: wait, duration: 0.6}
+      - {type: move, object: gripper, to: [0.0, 0.0, 0.30], duration: 0.8}
+  - id: fasten
+    instruction: "Cover is fastened to the housing."
+    actions:
+      - {type: fasten, object: cover, to: housing}
+      - {type: wait, duration: 0.7}
+  - id: convey_out
+    instruction: "Finished assembly leaves the station."
+    actions:
+      - {type: move, object: housing, to: [0.50, 0.0, 0.075], duration: 3.0}
